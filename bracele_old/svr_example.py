@@ -1,0 +1,48 @@
+from __future__ import division
+import time
+import numpy as np
+from sklearn.svm import SVR
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import learning_curve
+import matplotlib.pyplot as plt
+
+rng = np.random.RandomState(0)
+
+#generate random data
+X = 5 * rng.rand(10000, 1)
+y = np.sin(X).ravel()
+
+#add noise
+w = X.shape[0]
+tmp = rng.rand(int(w/50))
+y[::50] += 2 * (0.5 - tmp)
+X_plot = np.linspace(0, 5, 100000)[:, None]
+
+#train SVR model
+train_size = 100
+
+# 初始化SVR
+svr = GridSearchCV(SVR(kernel='rbf', gamma=0.1), cv=5,
+                   param_grid={"C": [1e0, 1e1, 1e2, 1e3],
+                               "gamma": np.logspace(-2, 2, 5)})
+# 记录训练时间
+t0 = time.time()
+# 训练
+svr.fit(X[:train_size], y[:train_size])
+svr_fit = time.time() - t0
+
+t0 = time.time()
+# 测试
+y_svr = svr.predict(X_plot)
+svr_predict = time.time() - t0
+
+# 对结果进行显示
+plt.scatter(X[:100], y[:100], c='k', label='data', zorder=1)
+plt.plot(X_plot, y_svr, c='r',
+         label='SVR (fit: %.3fs, predict: %.3fs)' % (svr_fit, svr_predict))
+
+plt.xlabel('data')
+plt.ylabel('target')
+plt.title('SVR versus Kernel Ridge')
+plt.legend()
+plt.show()
